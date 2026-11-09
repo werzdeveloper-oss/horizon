@@ -1,0 +1,11 @@
+# For physical iOS devices (iPhone/iPad)
+rustup target add aarch64-apple-ios
+
+# For the iOS Simulator (Apple Silicon Macs)
+rustup target add aarch64-apple-ios-sim
+
+# For the iOS Simulator (Intel Macs)
+rustup target add x86_64-apple-ios
+
+
+cargo build --release --target aarch64-apple-ios
