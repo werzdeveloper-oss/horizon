@@ -1,0 +1,54 @@
+name: Build Horizon (iOS IPA)
+
+on:
+  workflow_dispatch: # Best triggered manually so you can pass asset paths or tokens
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      # Step 1: Checkout the Horizon code
+      - name: Checkout Horizon Source
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Rust and add the iOS compilation target
+      - name: Setup Rust & iOS Target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+          components: clippy
+
+      # Step 3: Install Cargo Bundle (packs the compiled binary into a .app/.ipa format)
+      - name: Install Bundler Tools
+        run: cargo install cargo-bundle
+
+      # Step 4: Pull Your Prepared Assets (Crucial)
+      # Horizon legally requires you to provide your own Minecraft Java assets.
+      # You can upload your 'horizon-prepare' assets zip to a private repo/release
+      # and download them into the target directory here before building.
+      - name: Inject Prepared Java Assets
+        run: |
+          echo "Unzipping assets into Horizon's resource structure..."
+          # Example: unzip your_prepared_assets.zip -d assets/
+
+      # Step 5: Compile Horizon for Apple Devices (iOS/iPadOS)
+      - name: Cargo Build for iOS
+        run: |
+          cargo build --release --target aarch64-apple-ios --locked
+
+      # Step 6: Package into an unsigned IPA for Sideloading
+      # This builds an unsigned structure that tools like SideStore or LiveContainer can sign on your phone.
+      - name: Package to Unsigned IPA
+        run: |
+          mkdir -p Payload
+          # Moves the compiled Apple binary to an iOS Payload folder
+          cp -r target/aarch64-apple-ios/release/horizon-client Payload/Horizon.app
+          zip -r Horizon.ipa Payload/
+
+      # Step 7: Upload the ready-to-sideload IPA
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: horizon-ios-sideload
+          path: Horizon.ipa
